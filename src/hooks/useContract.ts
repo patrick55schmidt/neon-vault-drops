@@ -1,4 +1,4 @@
-import { useContract, useContractWrite, useContractRead } from 'wagmi';
+import { useContractWrite, useContractRead, useReadContract, useWriteContract } from 'wagmi';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -93,22 +93,7 @@ export const useNeonVaultContract = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const contract = useContract({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-  });
-
-  const { writeAsync: createDrop } = useContractWrite({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-    functionName: 'createVaultDrop',
-  });
-
-  const { writeAsync: purchaseNFT } = useContractWrite({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-    functionName: 'purchaseNFT',
-  });
+  const { writeContractAsync: writeContract } = useWriteContract();
 
   const createVaultDrop = async (dropData: {
     name: string;
@@ -123,7 +108,10 @@ export const useNeonVaultContract = () => {
       setIsLoading(true);
       setError(null);
 
-      const tx = await createDrop({
+      const tx = await writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'createVaultDrop',
         args: [
           dropData.name,
           dropData.description,
@@ -135,9 +123,8 @@ export const useNeonVaultContract = () => {
         ],
       });
 
-      await tx.wait();
       toast.success('Vault drop created successfully!');
-      return tx.hash;
+      return tx;
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to create vault drop';
       setError(errorMessage);
@@ -157,14 +144,16 @@ export const useNeonVaultContract = () => {
       // For now, we'll use a placeholder
       const inputProof = '0x'; // This would be the FHE proof
 
-      const tx = await purchaseNFT({
+      const tx = await writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'purchaseNFT',
         args: [BigInt(dropId), inputProof],
         value: BigInt(encryptedPrice), // This would be the encrypted price
       });
 
-      await tx.wait();
       toast.success('NFT purchased successfully!');
-      return tx.hash;
+      return tx;
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to purchase NFT';
       setError(errorMessage);
@@ -176,7 +165,7 @@ export const useNeonVaultContract = () => {
   };
 
   const getDropInfo = (dropId: number) => {
-    return useContractRead({
+    return useReadContract({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: 'getDropInfo',
@@ -185,7 +174,6 @@ export const useNeonVaultContract = () => {
   };
 
   return {
-    contract,
     createVaultDrop,
     buyNFT,
     getDropInfo,
