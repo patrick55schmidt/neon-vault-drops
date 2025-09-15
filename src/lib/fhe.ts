@@ -1,6 +1,8 @@
 // FHE utilities for encrypting sensitive data
 // This is a simplified implementation - in production, you would use Zama's FHE libraries
 
+import { ethers } from 'ethers';
+
 export interface EncryptedData {
   ciphertext: string;
   proof: string;
@@ -12,6 +14,11 @@ export interface FHEKeyPair {
   privateKey: string;
 }
 
+export interface ContractEncryptedData {
+  encryptedValue: string;
+  inputProof: string;
+}
+
 // Generate FHE key pair (simplified)
 export const generateFHEKeyPair = (): FHEKeyPair => {
   // In a real implementation, this would use Zama's FHE key generation
@@ -19,6 +26,33 @@ export const generateFHEKeyPair = (): FHEKeyPair => {
   const privateKey = `fhe_sk_${Math.random().toString(36).substr(2, 9)}`;
   
   return { publicKey, privateKey };
+};
+
+// Encrypt data using FHE for contract interaction
+export const encryptDataForContract = async (data: number): Promise<ContractEncryptedData> => {
+  try {
+    // Convert price to wei for precision
+    const priceInWei = ethers.parseEther(data.toString());
+    const timestamp = Date.now();
+    
+    // Create encrypted value (in real FHE, this would be actual encrypted data)
+    const encryptedValue = ethers.keccak256(
+      ethers.solidityPacked(['uint256', 'uint256'], [priceInWei, timestamp])
+    );
+    
+    // Generate proof (in real FHE, this would be a zero-knowledge proof)
+    const inputProof = ethers.keccak256(
+      ethers.solidityPacked(['bytes32', 'uint256'], [encryptedValue, timestamp])
+    );
+    
+    return {
+      encryptedValue,
+      inputProof
+    };
+  } catch (error) {
+    console.error('Error encrypting data for contract:', error);
+    throw new Error('Failed to encrypt data for contract');
+  }
 };
 
 // Encrypt data using FHE (simplified)

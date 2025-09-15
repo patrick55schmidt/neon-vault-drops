@@ -10,15 +10,13 @@ import { toast } from 'sonner';
 import { Shield, Lock, Eye, EyeOff } from 'lucide-react';
 
 export const CreateDrop = () => {
-  const { createVaultDrop, isLoading } = useNeonVaultContract();
+  const { createNftDrop, isLoading } = useNeonVaultContract();
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
-    imageUri: '',
-    totalSupply: '',
+    metadataHash: '',
+    totalNfts: '',
     price: '',
     duration: '',
-    revealDelay: '',
   });
   const [showEncrypted, setShowEncrypted] = useState(false);
   const [encryptedData, setEncryptedData] = useState<any>(null);
@@ -30,8 +28,8 @@ export const CreateDrop = () => {
       // Encrypt sensitive data using FHE
       const metadata = {
         rarity: Math.floor(Math.random() * 100),
-        price: parseInt(formData.price),
-        supply: parseInt(formData.totalSupply),
+        price: parseFloat(formData.price),
+        supply: parseInt(formData.totalNfts),
       };
       
       const encrypted = encryptNFTMetadata(metadata);
@@ -40,20 +38,29 @@ export const CreateDrop = () => {
       // Create FHE proof for contract
       const priceProof = createFHEProof(encrypted.encryptedPrice);
       
-      // Call contract to create vault drop
-      const txHash = await createVaultDrop({
+      // Call contract to create NFT drop
+      const txHash = await createNftDrop({
         name: formData.name,
-        description: formData.description,
-        imageUri: formData.imageUri,
-        totalSupply: parseInt(formData.totalSupply),
-        price: parseInt(formData.price),
-        duration: parseInt(formData.duration),
-        revealDelay: parseInt(formData.revealDelay),
+        metadataHash: formData.metadataHash,
+        totalNfts: parseInt(formData.totalNfts),
+        price: parseFloat(formData.price),
+        duration: parseInt(formData.duration) * 3600, // Convert hours to seconds
       });
       
-      toast.success(`Drop created! Transaction: ${txHash}`);
-    } catch (error) {
+      toast.success(`NFT Drop created! Transaction: ${txHash}`);
+      
+      // Reset form
+      setFormData({
+        name: '',
+        metadataHash: '',
+        totalNfts: '',
+        price: '',
+        duration: '',
+      });
+      setEncryptedData(null);
+    } catch (error: any) {
       console.error('Error creating drop:', error);
+      toast.error(`Failed to create drop: ${error.message || error.toString()}`);
     }
   };
 
@@ -75,7 +82,7 @@ export const CreateDrop = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Drop Name</Label>
                 <Input
@@ -88,78 +95,57 @@ export const CreateDrop = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="imageUri">Image URI</Label>
+                <Label htmlFor="metadataHash">Metadata Hash (IPFS)</Label>
                 <Input
-                  id="imageUri"
-                  value={formData.imageUri}
-                  onChange={(e) => handleInputChange('imageUri', e.target.value)}
-                  placeholder="https://example.com/image.png"
+                  id="metadataHash"
+                  value={formData.metadataHash}
+                  onChange={(e) => handleInputChange('metadataHash', e.target.value)}
+                  placeholder="Qm... (IPFS hash of encrypted metadata)"
                   required
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Describe your NFT drop"
-                rows={3}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="totalSupply">Total Supply</Label>
-                <Input
-                  id="totalSupply"
-                  type="number"
-                  value={formData.totalSupply}
-                  onChange={(e) => handleInputChange('totalSupply', e.target.value)}
-                  placeholder="100"
-                  required
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="totalNfts">Total NFTs</Label>
+                  <Input
+                    id="totalNfts"
+                    type="number"
+                    value={formData.totalNfts}
+                    onChange={(e) => handleInputChange('totalNfts', e.target.value)}
+                    placeholder="100"
+                    min="1"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="price">Price (ETH)</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.001"
+                    value={formData.price}
+                    onChange={(e) => handleInputChange('price', e.target.value)}
+                    placeholder="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Duration (hours)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    value={formData.duration}
+                    onChange={(e) => handleInputChange('duration', e.target.value)}
+                    placeholder="24"
+                    min="1"
+                    required
+                  />
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="price">Price (ETH)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.001"
-                  value={formData.price}
-                  onChange={(e) => handleInputChange('price', e.target.value)}
-                  placeholder="0.01"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="duration">Duration (hours)</Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  value={formData.duration}
-                  onChange={(e) => handleInputChange('duration', e.target.value)}
-                  placeholder="24"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="revealDelay">Reveal Delay (hours)</Label>
-              <Input
-                id="revealDelay"
-                type="number"
-                value={formData.revealDelay}
-                onChange={(e) => handleInputChange('revealDelay', e.target.value)}
-                placeholder="1"
-                required
-              />
             </div>
 
             <Button 

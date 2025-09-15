@@ -1,183 +1,216 @@
-import { useContractWrite, useContractRead, useReadContract, useWriteContract } from 'wagmi';
+import { useReadContract, useWriteContract, useAccount } from 'wagmi';
 import { useState } from 'react';
 import { toast } from 'sonner';
-
-// Contract ABI - This would be generated from your compiled contract
-const CONTRACT_ABI = [
-  {
-    "inputs": [
-      {"internalType": "address", "name": "_verifier", "type": "address"}
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {"indexed": true, "internalType": "uint256", "name": "dropId", "type": "uint256"},
-      {"indexed": true, "internalType": "address", "name": "creator", "type": "address"},
-      {"indexed": false, "internalType": "string", "name": "name", "type": "string"}
-    ],
-    "name": "DropCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {"indexed": true, "internalType": "uint256", "name": "tokenId", "type": "uint256"},
-      {"indexed": true, "internalType": "uint256", "name": "dropId", "type": "uint256"},
-      {"indexed": true, "internalType": "address", "name": "buyer", "type": "address"},
-      {"indexed": false, "internalType": "uint32", "name": "price", "type": "uint32"}
-    ],
-    "name": "NFTPurchased",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {"internalType": "string", "name": "_name", "type": "string"},
-      {"internalType": "string", "name": "_description", "type": "string"},
-      {"internalType": "string", "name": "_imageUri", "type": "string"},
-      {"internalType": "uint256", "name": "_totalSupply", "type": "uint256"},
-      {"internalType": "uint256", "name": "_price", "type": "uint256"},
-      {"internalType": "uint256", "name": "_duration", "type": "uint256"},
-      {"internalType": "uint256", "name": "_revealDelay", "type": "uint256"}
-    ],
-    "name": "createVaultDrop",
-    "outputs": [
-      {"internalType": "uint256", "name": "", "type": "uint256"}
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {"internalType": "uint256", "name": "dropId", "type": "uint256"},
-      {"internalType": "bytes", "name": "inputProof", "type": "bytes"}
-    ],
-    "name": "purchaseNFT",
-    "outputs": [
-      {"internalType": "uint256", "name": "", "type": "uint256"}
-    ],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {"internalType": "uint256", "name": "dropId", "type": "uint256"}
-    ],
-    "name": "getDropInfo",
-    "outputs": [
-      {"internalType": "string", "name": "name", "type": "string"},
-      {"internalType": "string", "name": "description", "type": "string"},
-      {"internalType": "string", "name": "imageUri", "type": "string"},
-      {"internalType": "uint8", "name": "totalSupply", "type": "uint8"},
-      {"internalType": "uint8", "name": "currentSupply", "type": "uint8"},
-      {"internalType": "uint8", "name": "price", "type": "uint8"},
-      {"internalType": "uint8", "name": "rarity", "type": "uint8"},
-      {"internalType": "bool", "name": "isActive", "type": "bool"},
-      {"internalType": "bool", "name": "isRevealed", "type": "bool"},
-      {"internalType": "address", "name": "creator", "type": "address"},
-      {"internalType": "uint256", "name": "startTime", "type": "uint256"},
-      {"internalType": "uint256", "name": "endTime", "type": "uint256"},
-      {"internalType": "uint256", "name": "revealTime", "type": "uint256"}
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-] as const;
-
-// Contract address - This would be your deployed contract address
-const CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000'; // Replace with actual address
+import { NEON_VAULT_DROPS_ABI, NEON_VAULT_DROPS_ADDRESS } from '@/lib/constants';
+import { encryptDataForContract } from '@/lib/fhe';
+import { ethers } from 'ethers';
 
 export const useNeonVaultContract = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { address } = useAccount();
 
   const { writeContractAsync: writeContract } = useWriteContract();
 
-  const createVaultDrop = async (dropData: {
+  // Create NFT Drop with FHE encrypted price
+  const createNftDrop = async (dropData: {
     name: string;
-    description: string;
-    imageUri: string;
-    totalSupply: number;
+    metadataHash: string;
+    totalNfts: number;
     price: number;
     duration: number;
-    revealDelay: number;
   }) => {
     try {
       setIsLoading(true);
       setError(null);
 
+      if (!address) {
+        throw new Error('Please connect your wallet');
+      }
+
+      // Encrypt the price using FHE
+      const encryptedPriceData = await encryptDataForContract(dropData.price);
+      
+      console.log('Creating NFT drop with encrypted price:', {
+        name: dropData.name,
+        price: dropData.price,
+        encryptedValue: encryptedPriceData.encryptedValue,
+        proof: encryptedPriceData.inputProof
+      });
+
       const tx = await writeContract({
-        address: CONTRACT_ADDRESS,
-        abi: CONTRACT_ABI,
-        functionName: 'createVaultDrop',
+        address: NEON_VAULT_DROPS_ADDRESS,
+        abi: NEON_VAULT_DROPS_ABI,
+        functionName: 'createNftDrop',
         args: [
           dropData.name,
-          dropData.description,
-          dropData.imageUri,
-          BigInt(dropData.totalSupply),
-          BigInt(dropData.price),
+          dropData.metadataHash,
+          BigInt(dropData.totalNfts),
+          encryptedPriceData.encryptedValue, // FHE encrypted price
           BigInt(dropData.duration),
-          BigInt(dropData.revealDelay),
+          encryptedPriceData.inputProof // FHE proof
         ],
       });
 
-      toast.success('Vault drop created successfully!');
+      toast.success(`NFT Drop "${dropData.name}" created successfully!`);
+      console.log('NFT Drop created, transaction hash:', tx);
       return tx;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to create vault drop';
+      const errorMessage = err.message || 'Failed to create NFT drop';
       setError(errorMessage);
       toast.error(errorMessage);
+      console.error('Error creating NFT drop:', err);
       throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const buyNFT = async (dropId: number, encryptedPrice: string) => {
+  // Mint NFT with FHE encrypted price payment
+  const mintNft = async (dropId: number, price: number) => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // In a real implementation, you would encrypt the price using FHE
-      // For now, we'll use a placeholder
-      const inputProof = '0x'; // This would be the FHE proof
+      if (!address) {
+        throw new Error('Please connect your wallet');
+      }
 
-      const tx = await writeContract({
-        address: CONTRACT_ADDRESS,
-        abi: CONTRACT_ABI,
-        functionName: 'purchaseNFT',
-        args: [BigInt(dropId), inputProof],
-        value: BigInt(encryptedPrice), // This would be the encrypted price
+      // Encrypt the price payment using FHE
+      const encryptedPriceData = await encryptDataForContract(price);
+      
+      console.log('Minting NFT with encrypted price payment:', {
+        dropId,
+        price,
+        encryptedValue: encryptedPriceData.encryptedValue,
+        proof: encryptedPriceData.inputProof
       });
 
-      toast.success('NFT purchased successfully!');
+      const tx = await writeContract({
+        address: NEON_VAULT_DROPS_ADDRESS,
+        abi: NEON_VAULT_DROPS_ABI,
+        functionName: 'mintNft',
+        args: [
+          BigInt(dropId),
+          encryptedPriceData.encryptedValue, // FHE encrypted price paid
+          encryptedPriceData.inputProof // FHE proof
+        ],
+        value: ethers.parseEther(price.toString()), // Send actual ETH
+      });
+
+      toast.success('NFT minted successfully!');
+      console.log('NFT minted, transaction hash:', tx);
       return tx;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to purchase NFT';
+      const errorMessage = err.message || 'Failed to mint NFT';
       setError(errorMessage);
       toast.error(errorMessage);
+      console.error('Error minting NFT:', err);
       throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Update user reputation with FHE encryption
+  const updateReputation = async (userAddress: string, reputation: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      if (!address) {
+        throw new Error('Please connect your wallet');
+      }
+
+      // Encrypt the reputation using FHE
+      const encryptedReputationData = await encryptDataForContract(reputation);
+      
+      console.log('Updating reputation with encrypted data:', {
+        userAddress,
+        reputation,
+        encryptedValue: encryptedReputationData.encryptedValue,
+        proof: encryptedReputationData.inputProof
+      });
+
+      const tx = await writeContract({
+        address: NEON_VAULT_DROPS_ADDRESS,
+        abi: NEON_VAULT_DROPS_ABI,
+        functionName: 'updateReputation',
+        args: [
+          userAddress,
+          encryptedReputationData.encryptedValue, // FHE encrypted reputation
+          encryptedReputationData.inputProof // FHE proof
+        ],
+      });
+
+      toast.success('Reputation updated successfully!');
+      console.log('Reputation updated, transaction hash:', tx);
+      return tx;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to update reputation';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error('Error updating reputation:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Get drop information
   const getDropInfo = (dropId: number) => {
     return useReadContract({
-      address: CONTRACT_ADDRESS,
-      abi: CONTRACT_ABI,
+      address: NEON_VAULT_DROPS_ADDRESS,
+      abi: NEON_VAULT_DROPS_ABI,
       functionName: 'getDropInfo',
       args: [BigInt(dropId)],
     });
   };
 
+  // Get drop counter
+  const getDropCounter = () => {
+    return useReadContract({
+      address: NEON_VAULT_DROPS_ADDRESS,
+      abi: NEON_VAULT_DROPS_ABI,
+      functionName: 'dropCounter',
+    });
+  };
+
+  // Get mint counter
+  const getMintCounter = () => {
+    return useReadContract({
+      address: NEON_VAULT_DROPS_ADDRESS,
+      abi: NEON_VAULT_DROPS_ABI,
+      functionName: 'mintCounter',
+    });
+  };
+
+  // Get user reputation
+  const getUserReputation = (userAddress: string) => {
+    return useReadContract({
+      address: NEON_VAULT_DROPS_ADDRESS,
+      abi: NEON_VAULT_DROPS_ABI,
+      functionName: 'getUserReputation',
+      args: [userAddress],
+    });
+  };
+
   return {
-    createVaultDrop,
-    buyNFT,
+    // Write functions
+    createNftDrop,
+    mintNft,
+    updateReputation,
+    
+    // Read functions
     getDropInfo,
+    getDropCounter,
+    getMintCounter,
+    getUserReputation,
+    
+    // State
     isLoading,
     error,
+    isConnected: !!address,
+    userAddress: address,
   };
 };

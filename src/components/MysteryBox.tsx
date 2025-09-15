@@ -2,6 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Clock, Lock, Users, Zap, Eye, Sparkles, Gift } from "lucide-react";
 import { useState } from "react";
+import { useNeonVaultContract } from "@/hooks/useContract";
+import { useAccount } from "wagmi";
+import { toast } from "sonner";
 
 interface MysteryBoxProps {
   id: string;
@@ -25,14 +28,43 @@ const MysteryBox = ({
   description,
 }: MysteryBoxProps) => {
   const [isMinting, setIsMinting] = useState(false);
+  const { mintNft, isLoading } = useNeonVaultContract();
+  const { isConnected } = useAccount();
   const progress = (minted / totalSupply) * 100;
 
   const handleMint = async () => {
-    setIsMinting(true);
-    // Minting logic will be implemented here
-    setTimeout(() => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet to mint NFT");
+      return;
+    }
+
+    try {
+      setIsMinting(true);
+      
+      // Convert drop ID to number (assuming id is a string representation of dropId)
+      const dropId = parseInt(id);
+      
+      if (isNaN(dropId)) {
+        throw new Error("Invalid drop ID");
+      }
+
+      // Convert price string to number
+      const priceNumber = parseFloat(price);
+      
+      console.log(`Minting NFT for drop ${dropId} with price ${priceNumber} ETH`);
+      
+      // Call the real contract with FHE encrypted price
+      const tx = await mintNft(dropId, priceNumber);
+      
+      console.log("NFT minted successfully:", tx);
+      toast.success("NFT minted successfully! Check your wallet.");
+      
+    } catch (error: any) {
+      console.error("Failed to mint NFT:", error);
+      toast.error(`Failed to mint NFT: ${error.message || error.toString()}`);
+    } finally {
       setIsMinting(false);
-    }, 2000);
+    }
   };
 
   return (
