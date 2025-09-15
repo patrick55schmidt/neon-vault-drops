@@ -8,6 +8,7 @@ import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { config } from './lib/wallet';
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { CreateDrop } from "./components/CreateDrop";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/create" element={<CreateDrop />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

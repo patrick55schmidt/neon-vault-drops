@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Clock, Lock, Users, Zap } from "lucide-react";
+import { Clock, Lock, Users, Zap, Eye, Sparkles, Gift } from "lucide-react";
 import { useState } from "react";
 
 interface MysteryBoxProps {
@@ -49,7 +49,7 @@ const MysteryBox = ({
         
         {/* Encrypted Overlay */}
         <div className="absolute top-4 right-4 bg-accent/90 backdrop-blur-sm rounded-full p-2 neon-glow-pink">
-          <Lock className="w-4 h-4 text-accent-foreground" />
+          <Eye className="w-4 h-4 text-accent-foreground" />
         </div>
 
         {/* Progress Bar */}
@@ -104,15 +104,16 @@ const MysteryBox = ({
               "Sold Out"
             ) : (
               <>
-                <Zap className="w-4 h-4 mr-2" />
+                <Gift className="w-4 h-4 mr-2" />
                 Mint Mystery NFT
               </>
             )}
           </Button>
         </div>
 
-        <div className="text-xs text-muted-foreground text-center pt-2">
-          🔒 Contents encrypted until reveal event
+        <div className="text-xs text-muted-foreground text-center pt-2 flex items-center justify-center gap-1">
+          <Sparkles className="w-3 h-3" />
+          Contents encrypted until reveal event
         </div>
       </div>
     </Card>

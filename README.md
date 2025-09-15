@@ -1,15 +1,56 @@
-# Neon Vault Drops
+<div align="center">
 
-A fully homomorphic encrypted (FHE) NFT platform built on Zama's FHE technology, enabling truly private NFT drops with encrypted metadata until reveal events.
+# 🌟 Neon Vault Drops
 
-## Features
+### *Where Privacy Meets Digital Art*
 
-- **FHE-Powered Privacy**: All NFT metadata is encrypted using fully homomorphic encryption
-- **Mystery Drops**: Create and participate in mystery NFT drops with encrypted contents
-- **Fair Distribution**: True randomness and fairness until reveal events
-- **Wallet Integration**: Support for multiple wallets including MetaMask, WalletConnect, and Rainbow
-- **Reputation System**: User verification and reputation tracking
-- **Decentralized**: Built on Ethereum Sepolia testnet
+[![FHE Powered](https://img.shields.io/badge/FHE-Powered-00D4FF?style=for-the-badge&logo=zama&logoColor=white)](https://zama.ai)
+[![Ethereum](https://img.shields.io/badge/Ethereum-Sepolia-627EEA?style=for-the-badge&logo=ethereum&logoColor=white)](https://sepolia.etherscan.io)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
+
+*Experience the future of NFT privacy with fully homomorphic encrypted mystery drops*
+
+</div>
+
+---
+
+## 🔐 What Makes Us Different?
+
+Unlike traditional NFT platforms where metadata is visible before reveal, **Neon Vault Drops** leverages Zama's cutting-edge FHE technology to keep everything encrypted until the moment of truth. Your mystery NFTs remain truly mysterious until reveal events.
+
+## ✨ Core Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 🔒 **FHE-Powered Privacy**
+- All NFT metadata encrypted with Zama's FHE
+- Zero-knowledge until reveal events
+- True privacy preservation
+
+### 🎲 **Mystery Drops**
+- Create encrypted NFT collections
+- Participate in mystery drops
+- Fair distribution guaranteed
+
+</td>
+<td width="50%">
+
+### 💼 **Multi-Wallet Support**
+- MetaMask integration
+- WalletConnect compatibility
+- Rainbow wallet support
+
+### 🏆 **Reputation System**
+- User verification system
+- Trust score tracking
+- Community governance
+
+</td>
+</tr>
+</table>
 
 ## Technology Stack
 
